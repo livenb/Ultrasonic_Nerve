@@ -3,6 +3,10 @@
 
 # data
 data/
+*.npy
+*.hdfs
+*.pyc
+
 
 # .DS_Store file
 .DS_Store
