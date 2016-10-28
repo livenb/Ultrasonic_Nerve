@@ -9,7 +9,7 @@ from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras import backend as K
 
 from data_prepare import load_train_data, load_test_data
-
+data_path = '../data/'
 K.set_image_dim_ordering('th')  # Theano dimension ordering in this code
 
 img_rows = 64
@@ -76,9 +76,11 @@ def get_unet():
 
 
 def preprocess(imgs):
-    imgs_p = np.ndarray((imgs.shape[0], imgs.shape[1], img_rows, img_cols), dtype=np.uint8)
+    imgs_p = np.ndarray((imgs.shape[0], imgs.shape[1], img_rows, img_cols),
+                        dtype=np.uint8)
     for i in range(imgs.shape[0]):
-        imgs_p[i, 0] = cv2.resize(imgs[i, 0], (img_cols, img_rows), interpolation=cv2.INTER_CUBIC)
+        imgs_p[i, 0] = cv2.resize(imgs[i, 0], (img_cols, img_rows),
+                                  interpolation=cv2.INTER_CUBIC)
     return imgs_p
 
 
@@ -105,13 +107,14 @@ def train_and_predict():
     print('Creating and compiling model...')
     print('-'*30)
     model = get_unet()
-    model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss', save_best_only=True)
+    model_checkpoint = ModelCheckpoint(data_path+'unet.hdf5', monitor='loss',
+                                       save_best_only=True)
 
     print('-'*30)
     print('Fitting model...')
     print('-'*30)
-    model.fit(imgs_train, imgs_mask_train, batch_size=32, nb_epoch=20, verbose=1, shuffle=True,
-              callbacks=[model_checkpoint])
+    model.fit(imgs_train, imgs_mask_train, batch_size=32, nb_epoch=20,
+              verbose=1, shuffle=True, callbacks=[model_checkpoint])
 
     print('-'*30)
     print('Loading and preprocessing test data...')
@@ -126,13 +129,13 @@ def train_and_predict():
     print('-'*30)
     print('Loading saved weights...')
     print('-'*30)
-    model.load_weights('unet.hdf5')
+    model.load_weights(data_path+'unet.hdf5')
 
     print('-'*30)
     print('Predicting masks on test data...')
     print('-'*30)
     imgs_mask_test = model.predict(imgs_test, verbose=1)
-    np.save('imgs_mask_test.npy', imgs_mask_test)
+    np.save(data_path+'imgs_mask_test.npy', imgs_mask_test)
 
 
 if __name__ == '__main__':
