@@ -14,8 +14,8 @@ def create_train_data():
     images = os.listdir(train_data_path)
     total = len(images) / 2
 
-    imgs = np.ndarray((total, 1, image_rows, image_cols), dtype=np.uint8)
-    imgs_mask = np.ndarray((total, 1, image_rows, image_cols), dtype=np.uint8)
+    imgs = np.ndarray((total, image_rows, image_cols), dtype=np.uint8)
+    imgs_mask = np.ndarray((total, image_rows, image_cols), dtype=np.uint8)
 
     i = 0
     print '-'*30
@@ -28,8 +28,8 @@ def create_train_data():
         img = cv2.imread(os.path.join(train_data_path, image_name), cv2.IMREAD_GRAYSCALE)
         img_mask = cv2.imread(os.path.join(train_data_path, image_mask_name), cv2.IMREAD_GRAYSCALE)
 
-        img = np.array([img])
-        img_mask = np.array([img_mask])
+        img = np.array(img)
+        img_mask = np.array(img_mask)
 
         imgs[i] = img
         imgs_mask[i] = img_mask

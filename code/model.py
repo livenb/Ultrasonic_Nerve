@@ -10,7 +10,7 @@ from keras import backend as K
 
 from data_prepare import load_train_data, load_test_data
 data_path = '../data/'
-K.set_image_dim_ordering('th')  # Theano dimension ordering in this code
+# K.set_image_dim_ordering('th')  # Theano dimension ordering in this code
 
 img_rows = 64
 img_cols = 80
@@ -30,7 +30,7 @@ def dice_coef_loss(y_true, y_pred):
 
 
 def get_unet():
-    inputs = Input((1, img_rows, img_cols))
+    inputs = Input((img_rows, img_cols, 1))
     conv1 = Convolution2D(32, 3, 3, activation='relu', border_mode='same')(inputs)
     conv1 = Convolution2D(32, 3, 3, activation='relu', border_mode='same')(conv1)
     pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
@@ -50,19 +50,19 @@ def get_unet():
     conv5 = Convolution2D(512, 3, 3, activation='relu', border_mode='same')(pool4)
     conv5 = Convolution2D(512, 3, 3, activation='relu', border_mode='same')(conv5)
 
-    up6 = merge([UpSampling2D(size=(2, 2))(conv5), conv4], mode='concat', concat_axis=1)
+    up6 = merge([UpSampling2D(size=(2, 2))(conv5), conv4], mode='concat', concat_axis=3)
     conv6 = Convolution2D(256, 3, 3, activation='relu', border_mode='same')(up6)
     conv6 = Convolution2D(256, 3, 3, activation='relu', border_mode='same')(conv6)
 
-    up7 = merge([UpSampling2D(size=(2, 2))(conv6), conv3], mode='concat', concat_axis=1)
+    up7 = merge([UpSampling2D(size=(2, 2))(conv6), conv3], mode='concat', concat_axis=3)
     conv7 = Convolution2D(128, 3, 3, activation='relu', border_mode='same')(up7)
     conv7 = Convolution2D(128, 3, 3, activation='relu', border_mode='same')(conv7)
 
-    up8 = merge([UpSampling2D(size=(2, 2))(conv7), conv2], mode='concat', concat_axis=1)
+    up8 = merge([UpSampling2D(size=(2, 2))(conv7), conv2], mode='concat', concat_axis=3)
     conv8 = Convolution2D(64, 3, 3, activation='relu', border_mode='same')(up8)
     conv8 = Convolution2D(64, 3, 3, activation='relu', border_mode='same')(conv8)
 
-    up9 = merge([UpSampling2D(size=(2, 2))(conv8), conv1], mode='concat', concat_axis=1)
+    up9 = merge([UpSampling2D(size=(2, 2))(conv8), conv1], mode='concat', concat_axis=3)
     conv9 = Convolution2D(32, 3, 3, activation='relu', border_mode='same')(up9)
     conv9 = Convolution2D(32, 3, 3, activation='relu', border_mode='same')(conv9)
 
@@ -76,11 +76,11 @@ def get_unet():
 
 
 def preprocess(imgs):
-    imgs_p = np.ndarray((imgs.shape[0], imgs.shape[1], img_rows, img_cols),
+    imgs_p = np.ndarray((imgs.shape[0], img_rows, img_cols, 1),
                         dtype=np.uint8)
     for i in range(imgs.shape[0]):
-        imgs_p[i, 0] = cv2.resize(imgs[i, 0], (img_cols, img_rows),
-                                  interpolation=cv2.INTER_CUBIC)
+        img = cv2.resize(imgs[i], (img_cols, img_rows))
+        imgs_p[i] = img.reshape((img.shape[0],img.shape[1],1))
     return imgs_p
 
 
