@@ -50,6 +50,10 @@ def get_unet():
     conv5 = Convolution2D(512, 3, 3, activation='relu', border_mode='same')(pool4)
     conv5 = Convolution2D(512, 3, 3, activation='relu', border_mode='same')(conv5)
 
+    pre = Convolution2D(1, 1, 1, init='he_normal', activation='sigmoid')(conv5)
+    pre = Flatten()(pre)
+    aux_out = Dense(1, activation='sigmoid', name='aux_output')(pre)
+
     up6 = merge([UpSampling2D(size=(2, 2))(conv5), conv4], mode='concat', concat_axis=3)
     conv6 = Convolution2D(256, 3, 3, activation='relu', border_mode='same')(up6)
     conv6 = Convolution2D(256, 3, 3, activation='relu', border_mode='same')(conv6)
@@ -66,12 +70,15 @@ def get_unet():
     conv9 = Convolution2D(32, 3, 3, activation='relu', border_mode='same')(up9)
     conv9 = Convolution2D(32, 3, 3, activation='relu', border_mode='same')(conv9)
 
-    conv10 = Convolution2D(1, 1, 1, activation='sigmoid')(conv9)
+    conv10 = Convolution2D(1, 1, 1, activation='sigmoid',
+                           name='main_output')(conv9)
 
-    model = Model(input=inputs, output=conv10)
+    model = Model(input=inputs, output=[conv10, aux_out])
 
-    model.compile(optimizer=Adam(lr=1e-5), loss=dice_coef_loss, metrics=[dice_coef])
-
+    model.compile(optimizer=Adam(lr=1e-5),
+                  loss={'main_output': dice_coef_loss, 'aux_output': 'binary_crossentropy'},
+                  metrics={'main_output': dice_coef, 'aux_output': 'acc'},
+                  loss_weights={'main_output': 1., 'aux_output': 0.5})
     return model
 
 
@@ -82,6 +89,10 @@ def preprocess(imgs):
         img = cv2.resize(imgs[i], (img_cols, img_rows))
         imgs_p[i] = img.reshape((img.shape[0],img.shape[1],1))
     return imgs_p
+
+
+def mask_exist(mask):
+    return np.array([int(np.sum(mask[i, 0]) > 0) for i in xrange(len(mask))])
 
 
 def train_and_predict():
@@ -113,7 +124,8 @@ def train_and_predict():
     print('-'*30)
     print('Fitting model...')
     print('-'*30)
-    model.fit(imgs_train, imgs_mask_train, batch_size=32, nb_epoch=20,
+    model.fit(imgs_train, [imgs_mask_train, mask_exist(imgs_mask_train)],
+              batch_size=32, nb_epoch=20,
               verbose=1, shuffle=True, callbacks=[model_checkpoint])
 
     print('-'*30)
